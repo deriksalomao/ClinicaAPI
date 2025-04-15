@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjetoClinica.Context;
 using ProjetoClinica.Models;
+using ProjetoClinica.ViewModels;
 
 namespace ProjetoClinica.Controllers 
 {
@@ -75,6 +76,33 @@ namespace ProjetoClinica.Controllers
                 if (pacienteASerDeletado == null) return NotFound("Paciente não encontrado");
 
                 _context.Pacientes.Remove(pacienteASerDeletado);
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Houve um problema: {ex.Message}");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePaciente(Guid id, [FromBody] PacienteVM pacienteVM)
+        {
+            try
+            {
+                if (pacienteVM == null) return BadRequest("Esse paciente não pode ser nulo!");
+
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                Paciente? pacienteExistente = await _context.Pacientes.FindAsync(id);
+
+                if (pacienteExistente == null) return NotFound();
+
+                pacienteExistente.Cpf = pacienteVM.Cpf;
+                pacienteExistente.Idade = pacienteVM.Idade;
+                pacienteExistente.Nome = pacienteVM.Nome;
 
                 await _context.SaveChangesAsync();
 
