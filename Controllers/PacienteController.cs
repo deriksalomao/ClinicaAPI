@@ -52,17 +52,26 @@ namespace ProjetoClinica.Controllers
         }
         
         [HttpPost]
-        public async Task<ActionResult<Paciente>> CreatePaciente([FromBody] Paciente novoPaciente)
+        public async Task<ActionResult<Paciente>> CreatePaciente([FromBody] PacienteVM novoPaciente)
         {
             try
-            {   
-                _context.Pacientes.Add(novoPaciente);
+            {
+                Paciente paciente = new Paciente()
+                {
+                    Nome = novoPaciente.Nome,
+                    Idade = novoPaciente.Idade,
+                    Cpf = novoPaciente.Cpf
+                };
+
+                _context.Pacientes.Add(paciente);
+
                 await _context.SaveChangesAsync();
-                return CreatedAtAction(nameof(GetPacienteById), new { id = novoPaciente.Id }, novoPaciente);
+
+                return CreatedAtAction(nameof(GetPacienteById), new { id = paciente.Id }, paciente);
             }
             catch (Exception ex) 
             {
-                return BadRequest($"Houve um problema: {ex.Message}");
+                return BadRequest($"Houve um problema ao criar um paciente: {ex.Message}");
             }
         }
 
@@ -73,7 +82,7 @@ namespace ProjetoClinica.Controllers
             {
                 Paciente? pacienteASerDeletado = await _context.Pacientes.FindAsync(id);
 
-                if (pacienteASerDeletado == null) return NotFound("Paciente não encontrado");
+                if (pacienteASerDeletado == null) return NotFound("Paciente não encontrado!");
 
                 _context.Pacientes.Remove(pacienteASerDeletado);
 
