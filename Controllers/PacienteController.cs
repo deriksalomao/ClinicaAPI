@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjetoClinica.Context;
 using ProjetoClinica.Models;
+using ProjetoClinica.Services.Interfaces;
 using ProjetoClinica.ViewModels;
 
 namespace ProjetoClinica.Controllers 
@@ -13,20 +14,22 @@ namespace ProjetoClinica.Controllers
     public class PacienteController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IPacienteService _pacienteService;
 
-        public PacienteController(AppDbContext context)
+        public PacienteController(AppDbContext context, IPacienteService pacienteService)
         {
             _context = context;
+            _pacienteService = pacienteService;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Paciente>> GetPacientes()
+        public async Task<ActionResult<IEnumerable<Paciente>>> GetPacientes()
         {
             try
             {
-                IEnumerable<Paciente> pacientesRetorno = _context.Pacientes;
+                IEnumerable<Paciente> pacientes = await _pacienteService.GetPacientes();
 
-                return Ok(pacientesRetorno);
+                return Ok(pacientes);
             }
             catch (Exception ex)
             {
@@ -39,11 +42,9 @@ namespace ProjetoClinica.Controllers
         {
             try
             {
-                Paciente? pacienteRetorno = await _context.Pacientes.FirstOrDefaultAsync(p => p.Id == id);
+                Paciente paciente = await _pacienteService.GetPacienteById(id);
 
-                if (pacienteRetorno == null) return NotFound();
-
-                return Ok(pacienteRetorno);
+                return Ok(paciente);
             }
             catch (Exception ex)
             {
@@ -54,24 +55,20 @@ namespace ProjetoClinica.Controllers
         [HttpPost]
         public async Task<ActionResult<Paciente>> CreatePaciente([FromBody] PacienteVM novoPaciente)
         {
+            if (novoPaciente == null)
+                return BadRequest("Dados do paciente não podem ser nulos.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             try
             {
-                Paciente paciente = new Paciente()
-                {
-                    Nome = novoPaciente.Nome,
-                    Idade = novoPaciente.Idade,
-                    Cpf = novoPaciente.Cpf
-                };
-
-                _context.Pacientes.Add(paciente);
-
-                await _context.SaveChangesAsync();
-
+                Paciente paciente = await _pacienteService.CreatePaciente(novoPaciente);
                 return CreatedAtAction(nameof(GetPacienteById), new { id = paciente.Id }, paciente);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                return BadRequest($"Houve um problema ao criar um paciente: {ex.Message}");
+                return BadRequest($"Erro ao criar paciente: {ex.Message}");
             }
         }
 
@@ -80,13 +77,7 @@ namespace ProjetoClinica.Controllers
         {
             try
             {
-                Paciente? pacienteASerDeletado = await _context.Pacientes.FindAsync(id);
-
-                if (pacienteASerDeletado == null) return NotFound("Paciente não encontrado!");
-
-                _context.Pacientes.Remove(pacienteASerDeletado);
-
-                await _context.SaveChangesAsync();
+                await _pacienteService.DeletePaciente(id);
 
                 return NoContent();
             }
@@ -105,15 +96,7 @@ namespace ProjetoClinica.Controllers
 
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
-                Paciente? pacienteExistente = await _context.Pacientes.FindAsync(id);
-
-                if (pacienteExistente == null) return NotFound();
-
-                pacienteExistente.Cpf = pacienteVM.Cpf;
-                pacienteExistente.Idade = pacienteVM.Idade;
-                pacienteExistente.Nome = pacienteVM.Nome;
-
-                await _context.SaveChangesAsync();
+                await _pacienteService.UpdatePaciente(id, pacienteVM);
 
                 return NoContent();
             }
