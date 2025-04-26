@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ProjetoClinica.Context;
 using ProjetoClinica.Models;
+using ProjetoClinica.Repositories;
 using ProjetoClinica.Services.Interfaces;
 using ProjetoClinica.ViewModels;
 
@@ -8,11 +9,12 @@ namespace ProjetoClinica.Services
 {
     public class PacienteService : IPacienteService
     {
-        private readonly AppDbContext _context;
+        //private readonly AppDbContext _context;
+        private readonly IRepository<Paciente> _repository; 
 
-        public PacienteService(AppDbContext context)
+        public PacienteService(IRepository<Paciente> repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
         public async Task<Paciente> CreatePaciente(PacienteVM novoPaciente)
@@ -27,25 +29,25 @@ namespace ProjetoClinica.Services
                 Cpf = novoPaciente.Cpf
             };
 
-            _context.Pacientes.Add(paciente);
-            await _context.SaveChangesAsync();
+            await _repository.AddAsync(paciente);
+            await _repository.SaveChangesAsync();
             return paciente;
         }
 
         public async Task DeletePaciente(Guid id)
         {
-            Paciente? pacienteASerDeletado = await _context.Pacientes.FindAsync(id);
+            Paciente? pacienteASerDeletado = await _repository.GetByIdAsync(id);
 
             if (pacienteASerDeletado == null) throw new Exception("Paciente não encontrado!");
 
-            _context.Pacientes.Remove(pacienteASerDeletado);
+            _repository.Delete(pacienteASerDeletado);
 
-            await _context.SaveChangesAsync();
+            await _repository.SaveChangesAsync();
         }
 
         public async Task<Paciente> GetPacienteById(Guid id)
         {
-            Paciente? pacienteRetorno = await _context.Pacientes.FirstOrDefaultAsync(p => p.Id == id);
+            Paciente? pacienteRetorno = await _repository.GetByIdAsync(id);
 
             if (pacienteRetorno == null) throw new Exception("Paciente não encontrado!");
 
@@ -54,14 +56,14 @@ namespace ProjetoClinica.Services
 
         public async Task<IEnumerable<Paciente>> GetPacientes()
         {
-            IEnumerable<Paciente> pacientesRetorno = await _context.Pacientes.ToListAsync();
+            IEnumerable<Paciente> pacientesRetorno = await _repository.GetAllAsync();
 
             return pacientesRetorno;
         }
 
         public async Task UpdatePaciente(Guid id, PacienteVM pacienteVM)
         {
-            Paciente? paciente = await _context.Pacientes.FindAsync(id);
+            Paciente? paciente = await _repository.GetByIdAsync(id);
 
             if (paciente == null) throw new Exception("Paciente não encontrado!");
 
@@ -69,7 +71,7 @@ namespace ProjetoClinica.Services
             paciente.Idade = pacienteVM.Idade;
             paciente.Nome = pacienteVM.Nome;
 
-            await _context.SaveChangesAsync();
+            await _repository.SaveChangesAsync();
         }
     }
 }

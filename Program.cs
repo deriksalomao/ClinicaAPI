@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProjetoClinica.Context;
+using ProjetoClinica.Repositories;
 using ProjetoClinica.Services;
 using ProjetoClinica.Services.Interfaces;
 
@@ -14,6 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connect
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<IPacienteService, PacienteService>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
